@@ -439,11 +439,10 @@ func (cr closingReader) Read(p []byte) (int, error) {
 	// should return 0, EOF.
 	//
 	// Therefore we must continue to just return an EOF on the
-	// close and not ship up the close error.
+	// close and not ship up the close error. We cannot return the error
+	// from Close().
 	if err == io.EOF {
-		if closeErr := cr.rc.Close(); closeErr != nil {
-			return n, closeErr // close must succeed for Read to succeed
-		}
+		cr.rc.Close()
 	} else if errors.Is(err, os.ErrClosed) {
 		err = io.EOF
 	}
