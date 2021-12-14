@@ -432,10 +432,20 @@ type closingReader struct {
 
 func (cr closingReader) Read(p []byte) (int, error) {
 	n, err := cr.rc.Read(p)
+	// From golang's definition of an io.Reader:
+	// An instance of this general case is that a Reader returning
+	// a non-zero number of bytes at the end of the input stream
+	// may return either err == EOF or err == nil. The next Read
+	// should return 0, EOF.
+	//
+	// Therefore we must continue to just return an EOF on the
+	// close and not ship up the close error.
 	if err == io.EOF {
 		if closeErr := cr.rc.Close(); closeErr != nil {
 			return n, closeErr // close must succeed for Read to succeed
 		}
+	} else if errors.Is(err, os.ErrClosed) {
+		err = io.EOF
 	}
 	return n, err
 }
